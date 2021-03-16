@@ -4,8 +4,6 @@ tmp
 *.dat
 .vscode
 node_modules/
-build/
-dist/
 lib/
 pkg/
 libagora_rtm_sdk.so
