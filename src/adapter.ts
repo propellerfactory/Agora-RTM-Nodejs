@@ -19,7 +19,7 @@ export class AgoraRtmChannel extends EventEmitter {
   }
 
   public join() {
-    return new Promise(async (resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
       try {
         await this.mutex.wait("join");
         this.mutex.lock("join");
@@ -44,7 +44,7 @@ export class AgoraRtmChannel extends EventEmitter {
   }
 
   public leave() {
-    return new Promise(async (resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
       try {
         await this.mutex.wait("leave");
         this.mutex.lock("leave");
@@ -129,7 +129,7 @@ class AgoraRtmSDK extends EventEmitter {
   }
 
   public login(token: string | null, account: string) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
       try {
         await this.mutex.wait("login");
         this.mutex.lock("login");
@@ -154,7 +154,7 @@ class AgoraRtmSDK extends EventEmitter {
   }
 
   public logout() {
-    return new Promise(async (resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
       try {
         await this.mutex.wait("logout");
         this.mutex.lock("logout");

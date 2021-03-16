@@ -37,7 +37,8 @@ typedef long long __int64;
     Isolate *isolate = Isolate::GetCurrent();                            \
     HandleScope scope(isolate);                                          \
     NodeEventCallback &cb = *it->second;                                 \
-    cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 0, nullptr); \
+    cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(),         \
+      cb.js_this.Get(isolate), 0, nullptr);                              \
   }
 
 #define MAKE_JS_CALL_1(ev, type, param)                               \
@@ -48,7 +49,8 @@ typedef long long __int64;
     HandleScope scope(isolate);                                       \
     Local<Value> argv[1]{napi_create_##type##_(isolate, param)};      \
     NodeEventCallback &cb = *it->second;                              \
-    cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 1, argv); \
+    cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(),      \
+      cb.js_this.Get(isolate), 1, argv);                              \
   }
 
 #define MAKE_JS_CALL_2(ev, type1, param1, type2, param2)              \
@@ -60,7 +62,8 @@ typedef long long __int64;
     Local<Value> argv[2]{napi_create_##type1##_(isolate, param1),     \
                          napi_create_##type2##_(isolate, param2)};    \
     NodeEventCallback &cb = *it->second;                              \
-    cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 2, argv); \
+    cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(),      \
+      cb.js_this.Get(isolate), 2, argv);                              \
   }
 
 #define MAKE_JS_CALL_3(ev, type1, param1, type2, param2, type3, param3) \
@@ -73,7 +76,8 @@ typedef long long __int64;
                          napi_create_##type2##_(isolate, param2),       \
                          napi_create_##type3##_(isolate, param3)};      \
     NodeEventCallback &cb = *it->second;                                \
-    cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 3, argv);   \
+    cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(),        \
+      cb.js_this.Get(isolate), 3, argv);                                \
   }
 
 #define MAKE_JS_CALL_4(ev, type1, param1, type2, param2, type3, param3, type4, param4) \
@@ -89,7 +93,8 @@ typedef long long __int64;
         napi_create_##type4##_(isolate, param4),                                       \
     };                                                                                 \
     NodeEventCallback &cb = *it->second;                                               \
-    cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 4, argv);                  \
+    cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(),                       \
+      cb.js_this.Get(isolate), 4, argv);                                               \
   }
 
 #define MAKE_JS_CALL_5(ev, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5) \
@@ -106,7 +111,8 @@ typedef long long __int64;
         napi_create_##type5##_(isolate, param5),                                                      \
     };                                                                                                \
     NodeEventCallback &cb = *it->second;                                                              \
-    cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 5, argv);                                 \
+    cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(),                                      \
+      cb.js_this.Get(isolate), 5, argv);                                                              \
   }
 
 #define MAKE_JS_CALL_6(ev, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5, type6, param6) \
@@ -124,7 +130,7 @@ typedef long long __int64;
         napi_create_##type6##_(isolate, param6),                                                                     \
     };                                                                                                               \
     NodeEventCallback &cb = *it->second;                                                                             \
-    cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 6, argv);                                                \
+    cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 6, argv);                  \
   }
 
 #define COMMAND_JS_CALLBACK_SUCCESS(cid)                                   \
@@ -135,7 +141,8 @@ typedef long long __int64;
     HandleScope scope(isolate);                                            \
     CommandPrivData &pdata = *it->second;                                  \
     NodeEventCallback *cb = pdata.success;                                 \
-    cb->callback.Get(isolate)->Call(cb->js_this.Get(isolate), 0, nullptr); \
+    cb->callback.Get(isolate)->Call(isolate->GetCurrentContext(),          \
+      cb->js_this.Get(isolate), 0, nullptr);                               \
   }
 
 #define COMMAND_JS_CALLBACK_FAIL(cid, type1, param1, type2, param2)     \
@@ -148,7 +155,8 @@ typedef long long __int64;
                          napi_create_##type2##_(isolate, param2)};      \
     CommandPrivData &pdata = *it->second;                               \
     NodeEventCallback *cb = pdata.fail;                                 \
-    cb->callback.Get(isolate)->Call(cb->js_this.Get(isolate), 2, argv); \
+    cb->callback.Get(isolate)->Call(isolate->GetCurrentContext(),       \
+      cb->js_this.Get(isolate), 2, argv);                               \
   }
 
 namespace agora
@@ -176,8 +184,10 @@ void RtmServerController::Init(Local<Object> exports)
   Nan::SetPrototypeMethod(tpl, "setParameters", setParameters);
   Nan::SetPrototypeMethod(tpl, "queryPeersOnlineStatus", queryPeersOnlineStatus);
 
-  constructor.Reset(tpl->GetFunction());
-  exports->Set(Nan::New("RtmServerController").ToLocalChecked(), tpl->GetFunction());
+  Isolate *isolate = Isolate::GetCurrent();
+  constructor.Reset(tpl->GetFunction(isolate->GetCurrentContext()).ToLocalChecked());
+  exports->Set(isolate->GetCurrentContext(), Nan::New("RtmServerController").ToLocalChecked(), 
+    tpl->GetFunction(isolate->GetCurrentContext()).ToLocalChecked());
 }
 
 void RtmServerController::New(const Nan::FunctionCallbackInfo<Value> &args)
@@ -532,14 +542,14 @@ void RtmServerController::onQueryPeersOnlineStatusResult(long long requestId, co
 
       for(int i = 0; i < peerCount; i++) {
           Local<Object> peerStatus = Nan::New<Object>();
-          peerStatus->Set(Nan::New<String>("peerId").ToLocalChecked(), Nan::New<String>(status[i].peerId).ToLocalChecked());
-          peerStatus->Set(Nan::New<String>("onlineState").ToLocalChecked(), Nan::New<Uint32>(status[i].onlineState));
-          nPeersStatus->Set(i, peerStatus);
+          peerStatus->Set(isolate->GetCurrentContext(), Nan::New<String>("peerId").ToLocalChecked(), Nan::New<String>(status[i].peerId).ToLocalChecked());
+          peerStatus->Set(isolate->GetCurrentContext(), Nan::New<String>("onlineState").ToLocalChecked(), Nan::New<Uint32>(status[i].onlineState));
+          nPeersStatus->Set(isolate->GetCurrentContext(), i, peerStatus);
       }
 
       Local<Value> argv[3]{ nRequestId, nErrorCode, nPeersStatus};
       NodeEventCallback& cb = *it->second;
-      cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 3, argv);
+      cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 3, argv);
     }
     
   });
@@ -580,7 +590,7 @@ Local<Object> RtmChannel::generateJSInstance(agora::rtm::IRtmService *rtm, agora
   Nan::SetPrototypeMethod(tpl, "leave", leave);
   Nan::SetPrototypeMethod(tpl, "release", release);
 
-  Local<Function> cons = tpl->GetFunction();
+  Local<Function> cons = tpl->GetFunction(Isolate::GetCurrent()->GetCurrentContext()).ToLocalChecked();
   Local<External> exrtm = Local<External>::New(Isolate::GetCurrent(), External::New(Isolate::GetCurrent(), rtm));
   Local<External> exch = Local<External>::New(Isolate::GetCurrent(), External::New(Isolate::GetCurrent(), channel));
   Local<External> exhandler = Local<External>::New(Isolate::GetCurrent(), External::New(Isolate::GetCurrent(), handler));

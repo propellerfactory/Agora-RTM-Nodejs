@@ -10,7 +10,7 @@ export default class Mutex {
   }
 
   public wait(key: string) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       setTimeout(() => {
         if (!this.lockers.get(key)) {
           resolve()

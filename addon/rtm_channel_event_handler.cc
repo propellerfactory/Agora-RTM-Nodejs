@@ -25,7 +25,7 @@ namespace agora {
             Isolate *isolate = Isolate::GetCurrent();\
             HandleScope scope(isolate);\
             NodeEventCallback& cb = *it->second;\
-            cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 0, nullptr);\
+            cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 0, nullptr);\
         }
 
 #define MAKE_JS_CALL_1(ev, type, param) \
@@ -36,7 +36,7 @@ namespace agora {
             Local<Value> argv[1]{ napi_create_##type##_(isolate, param)\
                                 };\
             NodeEventCallback& cb = *it->second;\
-            cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 1, argv);\
+            cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 1, argv);\
         }
 
 #define MAKE_JS_CALL_2(ev, type1, param1, type2, param2) \
@@ -48,7 +48,7 @@ namespace agora {
                                   napi_create_##type2##_(isolate, param2)\
                                 };\
             NodeEventCallback& cb = *it->second;\
-            cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 2, argv);\
+            cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 2, argv);\
         }
 
 #define MAKE_JS_CALL_3(ev, type1, param1, type2, param2, type3, param3) \
@@ -61,7 +61,7 @@ namespace agora {
                                   napi_create_##type3##_(isolate, param3) \
                                 };\
             NodeEventCallback& cb = *it->second;\
-            cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 3, argv);\
+            cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 3, argv);\
         }
 
 #define MAKE_JS_CALL_4(ev, type1, param1, type2, param2, type3, param3, type4, param4) \
@@ -75,7 +75,7 @@ namespace agora {
                                   napi_create_##type4##_(isolate, param4), \
                                 };\
             NodeEventCallback& cb = *it->second;\
-            cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 4, argv);\
+            cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 4, argv);\
         }
 
 #define MAKE_JS_CALL_5(ev, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5) \
@@ -90,7 +90,7 @@ namespace agora {
                                   napi_create_##type5##_(isolate, param5), \
                                 };\
             NodeEventCallback& cb = *it->second;\
-            cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 5, argv);\
+            cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 5, argv);\
         }
 
         void RtmChannelEventHandler::addEventHandler(const std::string& eventName, Persistent<Object>& obj, Persistent<Function>& callback)
@@ -168,7 +168,7 @@ namespace agora {
                 HandleScope scope(isolate);
                 Local<Array> array = Array::New(isolate, userCount);
                 for(int i = 0; i < userCount; i++) {
-                    array->Set(i, napi_create_string_(isolate, users[i].userId.c_str()));
+                    array->Set(isolate->GetCurrentContext(), i, napi_create_string_(isolate, users[i].userId.c_str()));
                 }
                 Local<Value> argv[2]{ array,
                     napi_create_int32_(isolate, errorCode)
@@ -176,7 +176,7 @@ namespace agora {
                 auto it = m_callbacks.find(RTM_CHANNEL_GET_MEMBERS);
                 if (it != m_callbacks.end()) {
                     NodeEventCallback& cb = *it->second;
-                    cb.callback.Get(isolate)->Call(cb.js_this.Get(isolate), 2, argv);
+                    cb.callback.Get(isolate)->Call(isolate->GetCurrentContext(), cb.js_this.Get(isolate), 2, argv);
                 }
                 delete []users;
             });
