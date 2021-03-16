@@ -1,13 +1,11 @@
 .DS_Store
 tmp
-sdk
 *.log
 *.dat
 .vscode
 node_modules/
 build/
 dist/
-include/
 lib/
 pkg/
 libagora_rtm_sdk.so
